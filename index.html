@@ -1,0 +1,799 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a0b0f">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Dr. JP Ogalo - Visualizer</title>
+<style>
+:root{--bg:#0a0b0f;--card:#14161d;--line:#262a37;--txt:#eef0f5;--mut:#98a0b3;--gold:#d9ac5f}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+#top{display:flex;align-items:center;gap:10px;padding:10px 14px 6px}
+.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#e7c07a,#b67d2d);color:#1a1205;font-weight:800;display:grid;place-items:center}
+#top h1{font-size:16px;margin:0}#top p{margin:0;font-size:11.5px;color:var(--mut)}
+#tabs{display:flex;gap:6px;padding:4px 10px 8px}
+#tabs button{flex:1;padding:10px 4px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--mut);font-weight:700;font-size:14px}
+#tabs button.on{background:var(--gold);color:#1a1205;border-color:var(--gold)}
+#stage{position:relative;height:58vh;min-height:330px;max-height:680px;margin:0 8px;border-radius:20px;overflow:hidden;background:#0b0c11;border:1px solid var(--line)}
+#cv{width:100%;height:100%;display:block;touch-action:none}
+#hots{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.hot{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;border:2px solid #fff;background:rgba(217,172,95,.55);pointer-events:auto;touch-action:none;box-shadow:0 0 0 0 rgba(217,172,95,.7);animation:pulse 1.8s infinite}
+.hot.sel{background:#fff;border-color:var(--gold)}
+@keyframes pulse{70%{box-shadow:0 0 0 12px rgba(217,172,95,0)}100%{box-shadow:0 0 0 0 rgba(217,172,95,0)}}
+#split{position:absolute;top:0;bottom:0;width:48px;margin-left:-24px;touch-action:none;cursor:ew-resize;z-index:3}
+#split:before{content:"";position:absolute;left:23px;top:0;bottom:0;width:2px;background:#fff;opacity:.85}
+#split i{position:absolute;left:5px;top:50%;margin-top:-18px;width:38px;height:36px;border-radius:18px;background:#fff;color:#111;font-style:normal;font-weight:800;display:grid;place-items:center;font-size:13px;box-shadow:0 2px 10px #000a}
+.lab{position:absolute;top:10px;font-size:11px;font-weight:800;letter-spacing:.08em;background:#000a;padding:4px 10px;border-radius:99px;pointer-events:none;z-index:2}
+#labB{left:10px}#labA{right:10px;color:var(--gold)}
+#tools{position:absolute;left:10px;bottom:10px;display:flex;gap:6px;z-index:4}
+#tools button{border:0;border-radius:99px;background:#000b;color:#fff;padding:7px 12px;font-size:12px;font-weight:700}
+#hint{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;bottom:48px;font-size:11px;color:#cfd3de;background:#0008;padding:4px 9px;border-radius:99px;pointer-events:none;z-index:2}
+#err{display:none;padding:18px;color:#f1d79e}
+main{max-width:780px;margin:0 auto;padding:0 10px 70px}
+.panel{display:none}.panel.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:10px}
+h2{font-size:18px;margin:14px 0 2px}.hint{color:var(--mut);font-size:12.5px;margin:0 0 8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.chip{padding:8px 13px;border-radius:99px;border:1px solid var(--line);background:#0f1118;color:var(--txt);font-size:13px;font-weight:600}
+.chip.on{border-color:var(--gold);color:var(--gold);background:#1b1a14}
+.row{margin:10px 0}.row label{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin-bottom:4px}
+.row.sel label{color:var(--gold)}
+input[type=range]{width:100%;accent-color:var(--gold)}
+input[type=text],input[type=email],input[type=number],select{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:#0d0f15;color:var(--txt);font-size:15px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.stat{background:#0f1118;border:1px solid var(--line);border-radius:12px;padding:10px 4px;text-align:center}
+.stat b{display:block;font-size:17px;color:var(--gold)}.stat span{font-size:11px;color:var(--mut)}
+.btn{display:inline-block;padding:12px 16px;border-radius:12px;border:0;background:var(--gold);color:#1a1205;font-weight:800;font-size:15px;margin:6px 6px 0 0;text-decoration:none}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt)}
+.info{font-size:13.5px;color:#dfe3ee;border-left:3px solid var(--gold);padding:4px 10px;margin-top:8px}
+.note{font-size:11.5px;color:var(--mut);margin-top:8px}
+.msg{font-size:13px;color:#f1d79e;margin-top:8px;min-height:18px}
+.sw{display:flex;gap:8px;align-items:center;margin-top:6px}
+.sw b{width:28px;height:28px;border-radius:50%;border:2px solid var(--line)}.sw b.on{border-color:var(--gold)}
+canvas.photo{width:100%;border-radius:14px;border:1px solid var(--line);background:#0b0c10;touch-action:none;margin-top:8px}
+details summary{cursor:pointer;font-weight:700}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mut);margin-top:8px}
+.quote{border:1px solid var(--gold);border-radius:16px;padding:18px;margin-top:14px;background:linear-gradient(180deg,#1b1a15,#14151b)}
+.quote h3{margin:0 0 4px;color:var(--gold)}.big{font-size:28px;font-weight:800;color:var(--gold)}
+@media print{body{background:#fff;color:#000}#top,#tabs,#stage,.panel:not(#p-quote),#qForm,.noprint{display:none!important}.quote{border:1px solid #000;background:#fff;color:#000}.quote h3,.big{color:#000}}
+</style>
+</head>
+<body>
+<div id="top"><div class="logo">JP</div><div><h1>Dr. JP Ogalo</h1><p>Plastic &amp; Reconstructive Surgery &middot; See it before you decide</p></div></div>
+<div id="tabs"><button data-t="botox" class="on">Botox</button><button data-t="lipo">Liposuction</button><button data-t="quote">Get a Quote</button></div>
+
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <div id="hots"></div>
+  <span class="lab" id="labB">BEFORE</span><span class="lab" id="labA">AFTER</span>
+  <div id="split"><i>&#8596;</i></div>
+  <div id="tools"><button id="bReset">Reset view</button><button id="bAuto">Auto-rotate: on</button></div>
+  <div id="hint">Drag to rotate &middot; pinch to zoom &middot; drag the divider</div>
+</div>
+<div id="err"></div>
+
+<main>
+<!-- BOTOX -->
+<section class="panel on" id="p-botox">
+  <h2>Botox: see where each unit goes</h2>
+  <p class="hint">Tap the glowing dots on the face, then slide the units. Left = before, right = after.</p>
+  <div class="chips" id="exprChips">
+    <button class="chip on" data-e="rest">Relaxed</button><button class="chip" data-e="surprised">Raise brows</button><button class="chip" data-e="frown">Frown</button><button class="chip" data-e="smile">Big smile</button>
+  </div>
+  <div class="card">
+    <div id="zoneBox"></div>
+    <div class="info" id="zoneInfo"></div>
+    <div class="stats">
+      <div class="stat"><b id="bxUnits">0</b><span>total units</span></div>
+      <div class="stat"><b id="bxSmooth">0%</b><span>lines softened</span></div>
+      <div class="stat"><b id="bxCost">-</b><span>est. cost (KES)</span></div>
+    </div>
+    <div class="msg" id="bxMsg"></div>
+    <button class="btn" id="bxSuggest">Suggested plan</button><button class="btn ghost" id="bxReset">Reset</button><button class="btn" id="bxQuote">Quote this plan</button>
+    <p class="note">Results appear in 3-7 days and last about 3-4 months. Illustrative simulation; Dr. Ogalo decides dosing at consultation.</p>
+  </div>
+  <div class="card"><div class="hint" style="margin:0">Skin tone</div><div class="sw" id="skinSw"></div></div>
+  <div class="card">
+    <details><summary>Try it on your own photo</summary>
+      <p class="hint">Upload a front-facing photo, then paint over the lines with your finger. Photos never leave your phone.</p>
+      <input type="file" accept="image/*" id="faceFile">
+      <div class="row"><label><span>Smoothing strength</span><span id="faceStrV">60%</span></label><input type="range" id="faceStr" min="20" max="100" value="60"></div>
+      <canvas class="photo" id="faceCv" width="10" height="10"></canvas>
+      <button class="btn ghost" id="faceReset">Reset photo</button>
+    </details>
+  </div>
+</section>
+
+<!-- LIPO -->
+<section class="panel" id="p-lipo">
+  <h2>Liposuction: how you could look</h2>
+  <p class="hint">Enter your numbers, choose the areas, slide the fat removed. Left = now, right = after.</p>
+  <div class="card">
+    <div class="grid2">
+      <div><label class="hint">Weight (kg)</label><input type="number" id="lW" value="88" min="35" max="200"></div>
+      <div><label class="hint">Height (cm)</label><input type="number" id="lH" value="168" min="120" max="220"></div>
+    </div>
+    <div class="chips" id="gChips"><button class="chip on" data-g="0">Female</button><button class="chip" data-g="1">Male</button></div>
+    <div class="hint" style="margin:6px 0 0">Areas to treat (tap the dots on the body too)</div>
+    <div class="chips" id="aChips"><button class="chip on" data-a="abd">Abdomen</button><button class="chip on" data-a="flank">Flanks</button><button class="chip" data-a="thigh">Thighs</button></div>
+    <div class="row"><label><span>Fat removed</span><span id="lLv">0.0 L</span></label><input type="range" id="lL" min="0" max="5" step="0.1" value="2.5"></div>
+    <div class="hint" style="margin:6px 0 0">View layers</div>
+    <div class="chips" id="vChips"><button class="chip on" data-v="0">Skin</button><button class="chip" data-v="1">Fat</button><button class="chip" data-v="2">Muscle</button><button class="chip" data-v="3">X-ray slice</button></div>
+    <div class="row" id="cutRow" style="display:none"><label><span>Slice height</span><span></span></label><input type="range" id="lCut" min="-0.05" max="0.35" step="0.005" value="0.10"></div>
+    <div class="chk" id="canRow" style="display:none"><input type="checkbox" id="lCan" checked><label for="lCan">Show cannula working inside the fat layer</label></div>
+    <div class="chips" id="camChips"><button class="chip" data-c="full">Full body</button><button class="chip" data-c="torso">Zoom torso</button><button class="chip" data-c="side">Side profile</button><button class="chip" data-c="back">Back</button></div>
+    <div class="info" id="lInfo"></div>
+    <div class="stats">
+      <div class="stat"><b id="lNewW">-</b><span>new weight (kg)</span></div>
+      <div class="stat"><b id="lBmi">-</b><span>BMI now &rarr; after</span></div>
+      <div class="stat"><b id="lWaist">-</b><span>waist change (est.)</span></div>
+    </div>
+    <div class="msg" id="lMsg"></div>
+    <button class="btn" id="lQuote">Quote this plan</button>
+    <p class="note">Liposuction shapes the body; it is not a weight-loss method. Safe volumes are decided by your surgeon. Illustrative simulation.</p>
+  </div>
+  <div class="card">
+    <details><summary>See it on your own photo</summary>
+      <p class="hint">Upload a torso photo (fitted wear is fine), tap your waist to place the target band. Photos never leave your phone.</p>
+      <input type="file" accept="image/*" id="bodyFile">
+      <div class="row"><label><span>Band height</span><span></span></label><input type="range" id="bBand" min="4" max="25" value="12"></div>
+      <div class="row"><label><span>Body width at waist</span><span></span></label><input type="range" id="bWidth" min="8" max="48" value="26"></div>
+      <canvas class="photo" id="bodyCv" width="10" height="10"></canvas>
+    </details>
+  </div>
+</section>
+
+<!-- QUOTE -->
+<section class="panel" id="p-quote">
+  <h2>Your personalised quote</h2>
+  <p class="hint">30 seconds. An estimate, confirmed at consultation.</p>
+  <div class="card" id="qForm">
+    <div class="row"><input type="text" id="qName" placeholder="Full name"></div>
+    <div class="row"><input type="email" id="qEmail" placeholder="Email"></div>
+    <div class="grid2"><input type="number" id="qW" placeholder="Weight (kg)"><input type="number" id="qH" placeholder="Height (cm)"></div>
+    <div class="note" id="qBmi">BMI: --</div>
+    <div class="row"><select id="qProc"><option value="botox">Botox</option><option value="lipo">Liposuction</option></select></div>
+    <div class="row" id="qUnitsRow"><input type="number" id="qUnits" placeholder="Botox units" min="1" value="44"></div>
+    <div id="qAreas" style="display:none"><div class="chips" id="qAChips"><button class="chip on" data-a="abd">Abdomen</button><button class="chip" data-a="flank">Flanks</button><button class="chip" data-a="thigh">Thighs</button></div></div>
+    <div class="row"><select id="qSmoke"><option value="No">I do not smoke / vape</option><option value="Yes">I smoke / vape</option></select></div>
+    <div class="row"><input type="text" id="qMed" placeholder="Medical conditions (or 'None')"></div>
+    <button class="btn" id="qGo">Calculate my quote</button>
+    <div class="msg" id="qErr"></div>
+  </div>
+  <div id="qOut"></div>
+</section>
+</main>
+
+<script>
+/* ===================== CONFIG (EDIT PRICES + WHATSAPP) ===================== */
+var CFG={
+  whatsapp:'254700000000',
+  botox:{min:800,max:1200},
+  areas:{abd:{n:'Abdomen',min:250000,max:400000},flank:{n:'Flanks / waist',min:200000,max:350000},thigh:{n:'Thighs',min:220000,max:380000}},
+  multiDiscount:0.85
+};
+/* ===================== SHADER ===================== */
+var FS=`#version 300 es
+precision highp float;
+precision highp int;
+out vec4 outColor;
+uniform vec2 uRes; uniform float uTime; uniform int uScene;
+uniform vec3 uCamPos,uCamFwd,uCamRight,uCamUp;
+uniform float uSplit; uniform vec3 uSkin;
+uniform float uGender,uScale; uniform vec3 uFatB,uFatA; uniform int uLayer; uniform float uCutY,uCan;
+uniform vec3 uRemA,uExpr; uniform int uSel;
+
+float gAfter=0.; vec3 gFat=vec3(0.); vec3 gRem=vec3(1.); vec3 gExpr=vec3(0.); float gScale=1.; bool gDetail=false;
+
+float dot2(vec3 v){return dot(v,v);}
+float smin(float a,float b,float k){float h=max(k-abs(a-b),0.)/k;return min(a,b)-h*h*k*0.25;}
+float smax(float a,float b,float k){return -smin(-a,-b,k);}
+float sdEll(vec3 p,vec3 r){float k0=length(p/r);float k1=length(p/(r*r));return k0*(k0-1.)/max(k1,1e-5);}
+float sdCap(vec3 p,vec3 a,vec3 b,float r){vec3 pa=p-a,ba=b-a;float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);return length(pa-ba*h)-r;}
+float sdRC(vec3 p,vec3 a,vec3 b,float r1,float r2){
+  vec3 ba=b-a;float l2=dot(ba,ba);float rr=r1-r2;float a2=l2-rr*rr;float il2=1./l2;
+  vec3 pa=p-a;float y=dot(pa,ba);float z=y-l2;float x2=dot2(pa*l2-ba*y);float y2=y*y*l2;float z2=z*z*l2;
+  float k=sign(rr)*rr*rr*x2;
+  if(sign(z)*a2*z2>k)return sqrt(x2+z2)*il2-r2;
+  if(sign(y)*a2*y2<k)return sqrt(x2+y2)*il2-r1;
+  return (sqrt(x2*a2*il2)+y*rr)*il2-r1;
+}
+float hash(vec3 p){p=fract(p*0.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
+float vn(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);
+  return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
+             mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
+
+/* ---------- face ---------- */
+float zF(vec3 p){return smoothstep(0.034,0.042,p.y)*(1.-smoothstep(0.062,0.070,p.y))*(1.-smoothstep(0.045,0.062,abs(p.x)))*smoothstep(0.02,0.05,p.z);}
+float zG(vec3 p){return (1.-smoothstep(0.014,0.024,abs(p.x)))*smoothstep(0.006,0.014,p.y)*(1.-smoothstep(0.040,0.048,p.y))*smoothstep(0.06,0.08,p.z);}
+float zC(vec3 p){float x=abs(p.x);float r=length(vec2(p.y-0.006,p.z-0.064));
+  return smoothstep(0.040,0.048,x)*(1.-smoothstep(0.026,0.036,r))*smoothstep(0.006,0.012,r)*(1.-smoothstep(0.066,0.074,p.z));}
+float wrinkle(vec3 p){
+  float f=zF(p)*pow(.5+.5*sin(p.y*800.+sin(p.x*70.)*0.9+1.5),3.)*(0.20+0.9*gExpr.x+0.15*gExpr.y)*gRem.x;
+  float g=zG(p)*pow(.5+.5*cos((abs(p.x)-0.0085)*820.),5.)*(0.14+0.95*gExpr.y)*gRem.y;
+  float ang=atan(p.y-0.006,0.064-p.z);
+  float c=zC(p)*pow(.5+.5*cos(ang*8.),4.)*(1.-smoothstep(0.7,0.95,abs(ang)))*(0.18+0.9*gExpr.z)*gRem.z;
+  return -(f*0.0011+g*0.0013+c*0.0010);
+}
+vec2 mapHead(vec3 p){
+  vec3 q=vec3(abs(p.x),p.y,p.z);
+  float browY=gExpr.x*0.005-gExpr.y*0.004;
+  float d=sdEll(p-vec3(0.,0.018,-0.014),vec3(0.082,0.094,0.102));
+  d=smin(d,sdEll(p-vec3(0.,-0.045,0.014),vec3(0.073,0.088,0.082)),0.04);
+  d=smin(d,sdEll(p-vec3(0.,-0.104,0.046),vec3(0.040,0.030,0.036)),0.03);
+  d=smin(d,sdEll(q-vec3(0.045,-0.066,0.032),vec3(0.028,0.030,0.034)),0.03);
+  d=smin(d,sdEll(q-vec3(0.056,-0.008+0.006*gExpr.z,0.058),vec3(0.020,0.014,0.020)),0.02);
+  d=smin(d,sdEll(p-vec3(0.,0.024+browY,0.074),vec3(0.068,0.015,0.026)),0.02);
+  float nose=sdRC(p,vec3(0.,0.010,0.080),vec3(0.,-0.036,0.099),0.008,0.0150);
+  nose=smin(nose,sdEll(q-vec3(0.019,-0.042,0.090),vec3(0.014,0.011,0.014)),0.010);
+  d=smin(d,nose,0.012);
+  d=smax(d,-(length(q-vec3(0.035,0.012,0.088))-0.0150),0.012);
+  float up=sdEll(p-vec3(0.,-0.0685,0.083),vec3(0.028,0.0078,0.013));
+  float lo=sdEll(p-vec3(0.,-0.0830,0.080),vec3(0.026,0.0100,0.0135));
+  d=smin(d,smin(up,lo,0.004),0.008);
+  float curve=0.004*gExpr.z*(q.x/0.026);
+  d=smax(d,-sdEll(p-vec3(0.,-0.0755+curve*0.4,0.093),vec3(0.021+0.004*gExpr.z,0.0016,0.012)),0.003);
+  d=smax(d,-(length(q-vec3(0.0075,-0.047,0.103))-0.0042),0.004);
+  d=smin(d,sdEll(q-vec3(0.076,-0.012,-0.006),vec3(0.008,0.026,0.017)),0.01);
+  if(gDetail)d+=wrinkle(p);
+  vec2 r=vec2(d,0.);
+  float eye=length(q-vec3(0.035,0.012,0.0735))-0.0118;
+  if(eye<r.x)r=vec2(eye,2.);
+  vec3 bq=q-vec3(0.036,0.034+browY,0.0955); bq.y-=0.25*(q.x-0.036);
+  float brow=sdEll(bq,vec3(0.022,0.0048,0.0075));
+  if(brow<r.x)r=vec2(brow,1.5);
+  float hl=0.064-0.07*smoothstep(0.0,-0.07,p.z)-0.028*smoothstep(0.04,0.085,abs(p.x));
+  float hair=sdEll(p-vec3(0.,0.012,-0.012),vec3(0.086,0.102,0.106));
+  hair=smax(hair,hl-p.y,0.004);
+  if(hair<0.01)hair-=0.0022*vn(p*170.);
+  if(hair<r.x)r=vec2(hair,1.);
+  return r;
+}
+vec2 mapHeadScene(vec3 p){
+  if(length(p-vec3(0.,-0.1,0.))>0.62)return vec2(length(p-vec3(0.,-0.1,0.))-0.5,0.);
+  vec2 r=mapHead(p);
+  float n=sdRC(p,vec3(0.,-0.07,-0.006),vec3(0.,-0.24,-0.014),0.052,0.068);
+  float sh=sdEll(p-vec3(0.,-0.285,-0.018),vec3(0.21,0.055,0.10));
+  float b=smin(n,sh,0.05);
+  if(r.y<0.5)r.x=smin(r.x,b,0.03); else if(b<r.x)r=vec2(b,0.);
+  return r;
+}
+/* ---------- body ---------- */
+float cr(float a,float b,float c,float d,float t){return 0.5*(2.*b+(c-a)*t+(2.*a-5.*b+4.*c-d)*t*t+(3.*b-a-3.*c+d)*t*t*t);}
+const vec4 PR[9]=vec4[9](vec4(0.165,0.105,0.150,0.100),vec4(0.178,0.108,0.150,0.100),vec4(0.150,0.090,0.142,0.092),vec4(0.122,0.082,0.135,0.088),vec4(0.128,0.086,0.148,0.096),vec4(0.140,0.092,0.165,0.106),vec4(0.152,0.098,0.180,0.115),vec4(0.168,0.092,0.192,0.112),vec4(0.125,0.078,0.135,0.085));
+vec2 PV(int i){vec4 v=PR[i];return vec2(mix(v.x,v.z,uGender),mix(v.y,v.w,uGender));}
+vec2 profile(float y){
+  float t=clamp((y+0.12)/0.08,0.,7.999);int i=int(floor(t));float f=t-float(i);
+  vec2 a=PV(max(i-1,0)),b=PV(i),c=PV(i+1),d=PV(min(i+2,8));
+  return vec2(cr(a.x,b.x,c.x,d.x,f),cr(a.y,b.y,c.y,d.y,f));
+}
+void torsoParams(float y,vec3 fat,out float rx,out float rz,out float zc){
+  vec2 pr=profile(y);
+  float bel=fat.x*exp(-pow((y-0.04)/0.10,2.));
+  float fl=fat.y*exp(-pow((y-0.10)/0.10,2.));
+  rx=pr.x*gScale+fl; rz=pr.y*gScale+0.5*bel; zc=0.5*bel;
+}
+float sdTorso(vec3 p,vec3 fat){
+  float y=clamp(p.y,-0.12,0.52);float rx,rz,zc;torsoParams(y,fat,rx,rz,zc);
+  vec2 q=vec2(p.x,p.z-zc);
+  float k0=length(q/vec2(rx,rz));float k1=length(q/vec2(rx*rx,rz*rz));
+  float d=k0*(k0-1.)/max(k1,1e-4);
+  float dy=abs(p.y-0.20)-0.32;
+  return length(max(vec2(d,dy),0.))+min(max(d,dy),0.);
+}
+float mapParts(vec3 p,float fm){
+  vec3 fat=gFat*fm; float g=uGender; float sl=1.+(gScale-1.)*1.3;
+  vec3 q=vec3(abs(p.x),p.y,p.z);
+  float d=sdTorso(p,fat);
+  d=smin(d,sdEll(p-vec3(0.,0.475,-0.008),vec3(0.17+0.015*g,0.04,0.075)),0.05);
+  d=smin(d,sdCap(p,vec3(0.,0.49,0.),vec3(0.,0.66,0.014),0.043+0.008*g),0.03);
+  vec3 br=mix(vec3(0.060,0.056,0.050),vec3(0.075,0.050,0.035),g);
+  d=smin(d,sdEll(q-vec3(0.078,mix(0.355,0.372,g),mix(0.082,0.080,g)),br),0.045);
+  d=smin(d,sdEll(q-vec3(0.08,-0.045,-0.075),vec3(0.075,0.085,0.07)*mix(1.,0.78,g)*sl),0.05);
+  float ar=0.045+0.006*g; ar*=sl;
+  float arm=sdRC(q,vec3(0.185,0.46,0.),vec3(0.295,0.205,0.),ar,0.036*sl+0.005*g);
+  arm=min(arm,sdRC(q,vec3(0.295,0.205,0.),vec3(0.375,-0.02,0.045),0.036*sl+0.005*g,0.026+0.003*g));
+  arm=min(arm,sdRC(q,vec3(0.375,-0.02,0.045),vec3(0.403,-0.125,0.062),0.026+0.003*g,0.019));
+  arm=smin(arm,sdEll(q-vec3(0.195,0.455,0.),vec3(0.05,0.055,0.05)),0.03);
+  d=smin(d,arm,0.03);
+  float th=(0.086+fat.z)*sl;
+  float leg=sdRC(q,vec3(0.090,-0.10,0.),vec3(0.094,-0.475,0.01),th,0.05*sl+0.4*fat.z);
+  leg=min(leg,sdRC(q,vec3(0.094,-0.475,0.01),vec3(0.086,-0.84,-0.006),0.05*sl+0.4*fat.z,0.033));
+  leg=smin(leg,sdEll(q-vec3(0.09,-0.60,-0.024),vec3(0.045,0.11,0.05)*sl),0.04);
+  leg=smin(leg,sdEll(q-vec3(0.088,-0.878,0.04),vec3(0.037,0.03,0.095)),0.02);
+  d=smin(d,leg,0.045);
+  float rx,rz,zc;torsoParams(0.04,fat,rx,rz,zc);
+  d=smax(d,-(length(p-vec3(0.,0.04,zc+rz-0.001))-0.0075),0.006);
+  return d;
+}
+vec2 mapBody(vec3 p){
+  vec3 bq=abs(p-vec3(0.,-0.02,0.))-vec3(0.62,0.95,0.34);
+  float bb=max(max(bq.x,bq.y),bq.z);
+  if(bb>0.05)return vec2(bb,0.);
+  float fm=(uLayer==2)?0.:1.;
+  float off=(uLayer==1)?0.004:((uLayer==2)?0.010:0.);
+  float d=mapParts(p,fm)+off;
+  vec3 ph=p-vec3(0.,0.752,0.008);
+  float dh=length(ph)-0.17;
+  vec2 hr=(dh>0.03)?vec2(dh,0.):mapHead(ph);
+  if(hr.y<0.5){d=smin(d,hr.x,0.02);return vec2(d,0.);}
+  if(hr.x<d)return hr;
+  return vec2(d,0.);
+}
+vec2 map(vec3 p){
+  vec2 r;
+  if(uScene==0){
+    r=mapBody(p);
+    if(uLayer==3){
+      r.x=max(r.x,p.y-uCutY);
+      if(uCan>0.5){
+        float rx,rz,zc;torsoParams(uCutY,gFat,rx,rz,zc);
+        float belA=gFat.x*exp(-pow((uCutY-0.04)/0.10,2.));
+        float zl=zc+rz-0.5*(0.008+belA)-0.004;
+        float s=0.5+0.5*sin(uTime*1.7);
+        vec3 H=vec3(-0.62,uCutY,zl-0.02); vec3 T=vec3(mix(-0.17,0.06,s),uCutY,zl+0.03*sin(uTime*0.9));
+        float c=sdCap(p,H,T,0.0035);
+        vec3 dir=normalize(T-H);
+        float hd=sdCap(p,H,H+dir*0.16,0.011);
+        if(c<r.x)r=vec2(c,4.);
+        if(hd<r.x)r=vec2(hd,5.);
+      }
+    }
+  } else r=mapHeadScene(p);
+  return r;
+}
+vec3 normalAt(vec3 p,float e){
+  const vec2 k=vec2(1,-1);
+  return normalize(k.xyy*map(p+k.xyy*e).x+k.yyx*map(p+k.yyx*e).x+k.yxy*map(p+k.yxy*e).x+k.xxx*map(p+k.xxx*e).x);
+}
+float softShadow(vec3 ro,vec3 rd,float tmax){
+  float res=1.,t=0.01;
+  for(int i=0;i<22;i++){float h=map(ro+rd*t).x;res=min(res,10.*h/t);t+=clamp(h,0.01,0.12);if(res<0.02||t>tmax)break;}
+  return clamp(res,0.,1.);
+}
+float calcAO(vec3 p,vec3 n,float sc){
+  float o=0.,s=1.;
+  for(int i=0;i<5;i++){float h=0.01*sc+0.03*sc*float(i)/4.;float d=map(p+n*h).x;o+=(h-d)*s;s*=0.8;}
+  return clamp(1.-4.5*o/sc,0.,1.);
+}
+vec3 camDir(vec3 c){return uCamRight*c.x+uCamUp*c.y-uCamFwd*c.z;}
+vec3 envC(vec3 d){
+  vec3 c=vec3(dot(d,uCamRight),dot(d,uCamUp),-dot(d,uCamFwd));
+  vec3 e=mix(vec3(0.018,0.02,0.026),vec3(0.16,0.18,0.22),c.y*0.5+0.5);
+  e+=pow(max(dot(c,normalize(vec3(-0.55,0.75,0.55))),0.),24.)*vec3(3.0,2.7,2.3);
+  e+=pow(max(dot(c,normalize(vec3(0.8,0.35,-0.7))),0.),18.)*vec3(0.5,1.1,1.5)*1.6;
+  e+=pow(max(dot(c,normalize(vec3(0.7,-0.1,0.6))),0.),12.)*vec3(1.0,0.65,0.4)*0.5;
+  return e;
+}
+vec3 lighting(vec3 p,vec3 n,vec3 rd,vec3 alb,float rough,float specAmt,float sssAmt,float sh,float ao){
+  vec3 V=-rd;
+  vec3 Lk=camDir(normalize(vec3(-0.55,0.75,0.55)));
+  vec3 Lr=camDir(normalize(vec3(0.8,0.35,-0.7)));
+  vec3 Lf=camDir(normalize(vec3(0.7,-0.1,0.6)));
+  float nk=dot(n,Lk);
+  float wrap=clamp((nk+0.35)/1.35,0.,1.);
+  vec3 col=alb*vec3(1.0,0.92,0.84)*2.4*wrap*mix(0.3,1.,sh);
+  col+=alb*vec3(0.45,0.85,1.15)*2.0*clamp((dot(n,Lr)+0.2)/1.2,0.,1.)*mix(0.5,1.,ao);
+  col+=alb*vec3(1.0,0.7,0.5)*0.9*clamp(dot(n,Lf),0.,1.);
+  float sss=pow(clamp(1.-abs(nk),0.,1.),3.)*clamp(nk+0.55,0.,1.);
+  col+=vec3(0.07,0.015,0.006)*sss*sssAmt*mix(0.3,1.,sh);
+  col+=alb*envC(n)*1.0*ao;
+  float nv=max(dot(n,V),0.001);
+  vec3 H=normalize(Lk+V);float nh=max(dot(n,H),0.);
+  float a=rough*rough;float a2=a*a;
+  float D=a2/(3.14159*pow(nh*nh*(a2-1.)+1.,2.));
+  float F=0.05+0.95*pow(1.-nv,5.);
+  col+=vec3(1.0,0.95,0.9)*(D*F*0.35*clamp(nk,0.,1.)*sh)*specAmt;
+  float a3=pow(rough*0.5,2.);float a4=a3*a3;
+  float D2=a4/(3.14159*pow(nh*nh*(a4-1.)+1.,2.));
+  col+=vec3(1.0,0.95,0.9)*(D2*F*0.012*clamp(nk,0.,1.)*sh)*specAmt;
+  vec3 R=reflect(rd,n);
+  col+=envC(R)*(0.05+0.95*pow(1.-nv,5.))*ao*specAmt*1.15;
+  return col;
+}
+vec3 aces(vec3 x){return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.,1.);}
+
+void main(){
+  vec2 fc=gl_FragCoord.xy;vec2 uv=(2.*fc-uRes)/uRes.y;
+  gAfter=(fc.x/uRes.x<uSplit)?0.:1.;
+  gFat=gAfter>0.5?uFatA:uFatB; gRem=gAfter>0.5?uRemA:vec3(1.);
+  gExpr=uExpr; gScale=uScale; gDetail=(uScene==1);
+  vec3 ro=uCamPos; vec3 rd=normalize(uv.x*uCamRight+uv.y*uCamUp+1.8*uCamFwd);
+  float rr=length(uv);
+  vec3 bg=mix(vec3(0.11,0.125,0.16),vec3(0.008,0.010,0.015),smoothstep(0.0,1.35,rr));
+  bg+=vec3(0.10,0.07,0.03)*exp(-pow((uv.y+0.95)/0.35,2.))*0.5;
+  vec3 col=bg;
+  float tmin=0.05,tmax=6.;
+  bool floorHit=false; float tf=1e9;
+  if(uScene==0){
+    vec3 bmin=vec3(-0.64,-0.93,-0.36),bmax=vec3(0.64,0.93,0.36);
+    vec3 inv=1./rd;vec3 t0=(bmin-ro)*inv,t1=(bmax-ro)*inv;
+    vec3 tn=min(t0,t1),tx=max(t0,t1);
+    tmin=max(max(tn.x,tn.y),tn.z);tmax=min(min(tx.x,tx.y),tx.z);
+    if(rd.y<0.){tf=(-0.905-ro.y)/rd.y;floorHit=tf>0.;}
+    if(floorHit)tmax=min(tmax,tf);
+    tmin=max(tmin,0.);
+  }
+  float t=tmin;float mat=-1.;bool hit=false;
+  if(tmax>tmin){
+    float stepK=(uScene==1)?0.75:0.9;
+    for(int i=0;i<120;i++){
+      vec3 p=ro+rd*t;vec2 h=map(p);
+      if(h.x<0.00035*t){mat=h.y;hit=true;break;}
+      t+=h.x*stepK;
+      if(t>tmax)break;
+    }
+  }
+  vec3 skin=uSkin;
+  if(hit){
+    vec3 p=ro+rd*t;
+    float eN=(uScene==1)?0.00035:0.0007*t;
+    vec3 n=normalAt(p,eN);
+    float fine=smoothstep(2.2,0.4,t);
+    vec3 npert=vec3(vn(p*500.),vn(p*500.+17.3),vn(p*500.+41.1))-0.5;
+    vec3 Lsh=camDir(normalize(vec3(-0.55,0.75,0.55)));
+    vec3 ph=(uScene==0)?p-vec3(0.,0.752,0.008):p;
+    vec3 alb=skin;float rough=0.36;float spec=1.;float sssA=1.;
+    bool cut=(uLayer==3&&uScene==0&&mat<0.5&&abs(p.y-uCutY)<0.0013);
+    float zoneGlow=0.;
+    if(mat>3.5){alb=mat>4.5?vec3(0.05,0.25,0.9):vec3(0.55,0.57,0.6);rough=0.25;sssA=0.;spec=1.5;}
+    else if(mat>1.75){
+      vec3 q=vec3(abs(ph.x),ph.y,ph.z)-vec3(0.035,0.012,0.0735);
+      float r=length(q.xy);
+      alb=vec3(0.62,0.58,0.5);
+      float veins=vn(p*400.);alb=mix(alb,vec3(0.6,0.35,0.3),smoothstep(0.7,1.,veins)*0.3);
+      if(q.z>0.003){ if(r<0.0058)alb=mix(vec3(0.12,0.05,0.02),vec3(0.28,0.13,0.05),smoothstep(0.002,0.0058,r)); if(r<0.0026)alb=vec3(0.002); if(r>0.0050&&r<0.0060)alb*=0.5;}
+      rough=0.08;sssA=0.2;n=normalize(n*vec3(1.));
+    }
+    else if(mat>1.25){alb=vec3(0.012,0.010,0.009);rough=0.6;spec=0.4;sssA=0.;}
+    else if(mat>0.5){alb=vec3(0.011,0.009,0.008);rough=0.55;spec=0.5;sssA=0.;n=normalize(n+(npert)*0.5);}
+    else{
+      bool cloth=false;
+      if(uScene==0&&uLayer!=1&&uLayer!=2){
+        if(p.y<-0.02&&p.y>-0.18&&abs(p.x)<0.2)cloth=true;
+        if(uGender<0.5){float lo=mix(0.335,0.315,smoothstep(-0.02,0.05,p.z));float hi=mix(0.385,0.415,smoothstep(-0.02,0.05,p.z));
+          if(p.y>lo&&p.y<hi&&abs(p.x)<0.165*uScale)cloth=true;}
+      }
+      if(cut){
+        float dF=mapParts(p,1.);float dM=mapParts(p,0.)+0.010;
+        float lob=vn(p*70.);
+        if(dF>-0.006){alb=skin*1.6;rough=0.5;}
+        else if(dM>0.){alb=mix(vec3(0.62,0.36,0.04),vec3(0.82,0.58,0.14),lob);rough=0.3;sssA=0.;spec=0.8;}
+        else if(dM>-0.03){alb=mix(vec3(0.42,0.03,0.025),vec3(0.62,0.08,0.05),vn(vec3(p.x*140.,p.y*10.,p.z*140.)));rough=0.3;sssA=0.;spec=0.8;}
+        else{alb=mix(vec3(0.07,0.008,0.012),vec3(0.13,0.02,0.02),vn(p*60.));rough=0.35;sssA=0.;spec=0.7;}
+      } else if(uLayer==1&&uScene==0){
+        float lob=vn(p*45.)*0.6+vn(p*110.)*0.4;alb=mix(vec3(0.55,0.30,0.03),vec3(0.80,0.55,0.12),lob);rough=0.28;sssA=0.;spec=0.9;
+        n=normalize(n+(vec3(vn(p*60.),vn(p*60.+7.),vn(p*60.+13.))-0.5)*0.22);
+      } else if(uLayer==2&&uScene==0){
+        float f=vn(vec3(p.x*150.,p.y*14.,p.z*150.));float f2=vn(vec3(p.x*40.,p.y*6.,p.z*40.));
+        alb=mix(vec3(0.30,0.02,0.018),vec3(0.55,0.07,0.05),f*0.7+f2*0.3);rough=0.26;sssA=0.;spec=1.;
+        n=normalize(n+(vec3(f-0.5,0.,f2-0.5))*0.25);
+      } else if(cloth){
+        alb=vec3(0.12,0.115,0.11)*(0.92+0.16*vn(p*900.));rough=0.85;spec=0.1;sssA=0.;
+      } else {
+        alb*=0.88+0.24*vn(p*22.);
+        float lip=smoothstep(0.03,0.02,abs(ph.x))*smoothstep(-0.095,-0.082,ph.y)*smoothstep(-0.058,-0.066,ph.y)*smoothstep(0.065,0.078,ph.z);
+        alb=mix(alb,alb*vec3(1.7,1.0,1.05)+vec3(0.010,0.0,0.002),lip*0.9);
+        n=normalize(n+npert*0.16*fine);
+        rough=0.34;
+      }
+      if(uScene==1){
+        float m1=zF(ph),m2=zG(ph),m3=zC(ph);
+        float pulse=0.5+0.5*sin(uTime*3.);
+        zoneGlow=((uSel==1?m1:0.)+(uSel==2?m2:0.)+(uSel==3?m3:0.))*(0.05+0.06*pulse);
+      }
+    }
+    float sh=softShadow(p+n*0.002,Lsh,2.);
+    float ao=calcAO(p,n,(uScene==1)?0.35:1.);
+    col=lighting(p,n,rd,alb,rough,spec,sssA,sh,ao);
+    col+=vec3(1.0,0.72,0.25)*zoneGlow;
+    if(cut)col*=1.0;
+  } else if(floorHit&&tf<1e8){
+    vec3 pf=ro+rd*tf;float r=length(pf.xz);
+    vec3 fcol=vec3(0.03,0.034,0.044)*(1.-smoothstep(0.5,2.0,r));
+    fcol+=exp(-pow((r-0.62)/0.012,2.))*vec3(0.9,0.68,0.3)*0.9;
+    fcol+=exp(-pow((r-0.62)/0.08,2.))*vec3(0.5,0.35,0.15)*0.12;
+    float sh=softShadow(pf+vec3(0.,0.003,0.),normalize(vec3(-0.3,1.,0.4)),3.);
+    fcol*=mix(0.25,1.,sh);
+    col=mix(bg,fcol+bg*0.5,1.-smoothstep(1.0,2.6,r));
+  }
+  col*=1.-0.35*smoothstep(0.7,1.6,rr);
+  col=aces(col*1.05);
+  col=pow(col,vec3(1./2.2));
+  outColor=vec4(col,1.);
+}`;
+var VS=`#version 300 es
+in vec2 a;void main(){gl_Position=vec4(a,0.,1.);}`;
+
+/* ===================== HELPERS ===================== */
+var $=function(s){return document.querySelector(s)},$$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
+var clamp=function(v,a,b){return Math.max(a,Math.min(b,v))};
+var fmt=function(n){return 'KES '+Math.round(n).toLocaleString('en-KE')};
+var IN_APP=/; wv\)|Version\/.* Chrome\/.* Mobile.*wv/i.test(navigator.userAgent)||!!window.AndroidApp;
+
+/* ===================== STATE ===================== */
+var SKINS=[['Deep ebony',[0.018,0.011,0.009]],['Dark brown',[0.032,0.019,0.014]],['Rich brown',[0.060,0.034,0.023]],['Medium brown',[0.115,0.066,0.044]]];
+var S={tab:'botox',skin:0,split:0.5,auto:true,
+  bx:{u:[0,0,0],expr:[0,0,0],sel:1},
+  lp:{w:88,h:168,g:0,areas:{abd:true,flank:true,thigh:false},L:2.5,layer:0,cut:0.10,can:true}};
+var ZN=[['Forehead lines',12,24],['Frown lines (between brows)',20,30],["Crow's feet (both sides)",24,36]];
+var ZINFO=[
+ 'FOREHEAD: the frontalis muscle lifts your brows and creates horizontal lines. Botox relaxes it so the lines soften. Too much can weigh the brows down, so we stay conservative.',
+ 'FROWN LINES: the corrugator and procerus muscles pull the brows together ("11 lines"). Usually the first area treated, and the most noticeable change.',
+ "CROW'S FEET: the muscle around the eye (orbicularis oculi) creases when you smile. Injected at about 3 points each side to soften lines while keeping a natural smile."];
+
+/* ===================== GL ===================== */
+var cv=$('#cv'),gl=cv.getContext('webgl2',{antialias:false,alpha:false,preserveDrawingBuffer:true});
+var U={},prog=null,GLOK=false;
+function initGL(){
+  if(!gl){$('#err').style.display='block';$('#err').textContent='This device does not support WebGL2, which the 3D view needs. Please update Chrome / Android System WebView.';$('#stage').style.display='none';return;}
+  function sh(t,s){var o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS)){var m=gl.getShaderInfoLog(o);console.error(m);$('#err').style.display='block';$('#err').textContent='Shader error: '+m;throw new Error(m);}return o;}
+  prog=gl.createProgram();gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS));gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(prog));
+  gl.useProgram(prog);
+  var b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  var loc=gl.getAttribLocation(prog,'a');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+  ['uRes','uTime','uScene','uCamPos','uCamFwd','uCamRight','uCamUp','uSplit','uSkin','uGender','uScale','uFatB','uFatA','uLayer','uCutY','uCan','uRemA','uExpr','uSel'].forEach(function(n){U[n]=gl.getUniformLocation(prog,n)});
+  GLOK=true;
+}
+
+/* ===================== CAMERA ===================== */
+var cam={yaw:0.5,pitch:0.08,dist:1.95,tx:0,ty:-0.01,tz:0};
+var camT={yaw:0.5,pitch:0.08,dist:1.95,tx:0,ty:-0.01,tz:0};
+var PRE={
+  head:{yaw:0.3,pitch:0.02,dist:0.46,tx:0,ty:-0.03,tz:0},
+  full:{yaw:0.45,pitch:0.08,dist:1.95,tx:0,ty:-0.01,tz:0},
+  torso:{yaw:0.35,pitch:0.12,dist:1.15,tx:0,ty:0.12,tz:0},
+  side:{yaw:1.57,pitch:0.08,dist:1.5,tx:0,ty:0.1,tz:0},
+  back:{yaw:3.14,pitch:0.08,dist:1.5,tx:0,ty:0.05,tz:0},
+  slice:{yaw:0.4,pitch:0.85,dist:1.1,tx:0,ty:0.1,tz:0}
+};
+function goCam(k){Object.assign(camT,PRE[k]);}
+function camBasis(){
+  var cp=Math.cos(cam.pitch),sp=Math.sin(cam.pitch);
+  var tgt=[cam.tx,cam.ty,cam.tz];
+  var pos=[tgt[0]+cam.dist*Math.sin(cam.yaw)*cp,tgt[1]+cam.dist*sp,tgt[2]+cam.dist*Math.cos(cam.yaw)*cp];
+  var f=[tgt[0]-pos[0],tgt[1]-pos[1],tgt[2]-pos[2]];var l=Math.hypot(f[0],f[1],f[2]);f=f.map(function(v){return v/l});
+  var r=[f[1]*0-f[2]*1,f[2]*0-f[0]*0,f[0]*1-f[1]*0];  /* cross(f,up) with up=(0,1,0) */
+  r=[-f[2],0,f[0]];l=Math.hypot(r[0],r[1],r[2]);r=r.map(function(v){return v/l});
+  var u=[r[1]*f[2]-r[2]*f[1],r[2]*f[0]-r[0]*f[2],r[0]*f[1]-r[1]*f[0]];
+  return {pos:pos,f:f,r:r,u:u};
+}
+function project(P,B,w,h){
+  var d=[P[0]-B.pos[0],P[1]-B.pos[1],P[2]-B.pos[2]];
+  var df=d[0]*B.f[0]+d[1]*B.f[1]+d[2]*B.f[2];if(df<=0.01)return null;
+  var x=1.8*(d[0]*B.r[0]+d[1]*B.r[1]+d[2]*B.r[2])/df,y=1.8*(d[0]*B.u[0]+d[1]*B.u[1]+d[2]*B.u[2])/df;
+  return [(x*h+w)/2,(h-y*h)/2,df];
+}
+
+/* ===================== STAGE SIZE / ADAPTIVE QUALITY ===================== */
+var qScale=0.6,frameAvg=16,lastT=0,cd=0;
+function sizeCanvas(){
+  var r=$('#stage').getBoundingClientRect();var dpr=Math.min(window.devicePixelRatio||1,2)*qScale;
+  var w=Math.max(2,Math.round(r.width*dpr)),h=Math.max(2,Math.round(r.height*dpr));
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}
+}
+window.addEventListener('resize',sizeCanvas);
+
+/* ===================== INTERACTION ===================== */
+var ptrs={},pinch0=0,drag=null;
+cv.addEventListener('pointerdown',function(e){cv.setPointerCapture(e.pointerId);ptrs[e.pointerId]={x:e.clientX,y:e.clientY};S.auto=false;updAutoBtn();if(Object.keys(ptrs).length===2){var k=Object.keys(ptrs);pinch0=Math.hypot(ptrs[k[0]].x-ptrs[k[1]].x,ptrs[k[0]].y-ptrs[k[1]].y);}});
+cv.addEventListener('pointermove',function(e){
+  var p=ptrs[e.pointerId];if(!p)return;var ks=Object.keys(ptrs);
+  if(ks.length===1){camT.yaw-=(e.clientX-p.x)*0.008;camT.pitch=clamp(camT.pitch+(e.clientY-p.y)*0.006,-0.4,1.35);cam.yaw=camT.yaw;cam.pitch=camT.pitch;}
+  p.x=e.clientX;p.y=e.clientY;
+  if(ks.length===2){var a=ptrs[ks[0]],b=ptrs[ks[1]];var d=Math.hypot(a.x-b.x,a.y-b.y);if(pinch0>0){camT.dist=clamp(camT.dist*pinch0/d,dmin(),dmax());cam.dist=camT.dist;}pinch0=d;}
+});
+function endP(e){delete ptrs[e.pointerId];pinch0=0;}
+cv.addEventListener('pointerup',endP);cv.addEventListener('pointercancel',endP);
+cv.addEventListener('wheel',function(e){e.preventDefault();camT.dist=clamp(camT.dist*(1+e.deltaY*0.001),dmin(),dmax());},{passive:false});
+function dmin(){return S.tab==='botox'?0.28:0.8}function dmax(){return S.tab==='botox'?1.3:4.2}
+/* split handle */
+var splitEl=$('#split'),sdrag=false;
+function setSplit(x){var r=$('#stage').getBoundingClientRect();S.split=clamp((x-r.left)/r.width,0.03,0.97);}
+splitEl.addEventListener('pointerdown',function(e){sdrag=true;splitEl.setPointerCapture(e.pointerId);setSplit(e.clientX);e.stopPropagation();});
+splitEl.addEventListener('pointermove',function(e){if(sdrag)setSplit(e.clientX);});
+splitEl.addEventListener('pointerup',function(){sdrag=false;});
+function updAutoBtn(){$('#bAuto').textContent='Auto-rotate: '+(S.auto?'on':'off');}
+$('#bAuto').onclick=function(){S.auto=!S.auto;updAutoBtn();};
+$('#bReset').onclick=function(){goCam(S.tab==='botox'?'head':(S.lp.layer===3?'slice':'full'));};
+
+/* ===================== TABS ===================== */
+$$('#tabs button').forEach(function(b){b.onclick=function(){showTab(b.dataset.t)}});
+function showTab(t){
+  S.tab=t;
+  $$('#tabs button').forEach(function(x){x.classList.toggle('on',x.dataset.t===t)});
+  $$('.panel').forEach(function(p){p.classList.toggle('on',p.id==='p-'+t)});
+  $('#stage').style.display=(t==='quote')?'none':'block';
+  if(t==='botox'){goCam('head');S.auto=false;buildHots();}
+  if(t==='lipo'){goCam(S.lp.layer===3?'slice':'full');S.auto=true;buildHots();}
+  updAutoBtn();sizeCanvas();updLipo();window.scrollTo(0,0);
+}
+
+/* ===================== BOTOX UI ===================== */
+function buildZones(){
+  $('#zoneBox').innerHTML=ZN.map(function(z,i){return '<div class="row" id="zr'+i+'"><label><span>'+z[0]+'</span><span id="zv'+i+'">0 u</span></label><input type="range" id="zs'+i+'" min="0" max="'+(z[2]+10)+'" value="0"></div>'}).join('');
+  ZN.forEach(function(z,i){$('#zs'+i).oninput=function(e){S.bx.u[i]=+e.target.value;selZone(i+1);updBotox();};});
+  selZone(1);
+}
+function selZone(z){S.bx.sel=z;ZN.forEach(function(_,i){$('#zr'+i).classList.toggle('sel',i+1===z)});$('#zoneInfo').textContent=ZINFO[z-1];$$('.hot').forEach(function(h){h.classList.toggle('sel',+h.dataset.z===z&&S.tab==='botox')});}
+function remF(i){return 1-Math.min(1,S.bx.u[i]/ZN[i][1])*0.93;}
+function updBotox(){
+  var tot=0,soft=0,warn='';
+  ZN.forEach(function(z,i){var u=S.bx.u[i];tot+=u;soft+=(1-remF(i))/0.93*100/3;$('#zv'+i).textContent=u+' u';if(u>z[2])warn='Above the usual range for '+z[0].toLowerCase()+': risk of a heavy, "frozen" look.';});
+  $('#bxUnits').textContent=tot;$('#bxSmooth').textContent=Math.round(soft)+'%';
+  $('#bxCost').textContent=tot?Math.round(tot*CFG.botox.min/1000)+'k-'+Math.round(tot*CFG.botox.max/1000)+'k':'-';
+  $('#bxMsg').textContent=warn||(tot?'Now tap Raise brows, Frown or Big smile, and drag the divider to compare.':'Tap a dot on the face, then slide the units up.');
+}
+$$('#exprChips .chip').forEach(function(b){b.onclick=function(){$$('#exprChips .chip').forEach(function(x){x.classList.toggle('on',x===b)});var e=b.dataset.e;S.bx.expr=[e==='surprised'?1:0,e==='frown'?1:0,e==='smile'?1:0];};});
+$('#bxSuggest').onclick=function(){ZN.forEach(function(z,i){S.bx.u[i]=z[1];$('#zs'+i).value=z[1];});updBotox();};
+$('#bxReset').onclick=function(){ZN.forEach(function(z,i){S.bx.u[i]=0;$('#zs'+i).value=0;});updBotox();};
+$('#bxQuote').onclick=function(){var t=S.bx.u[0]+S.bx.u[1]+S.bx.u[2];$('#qProc').value='botox';$('#qUnits').value=t||44;qProcChange();showTab('quote');};
+$('#skinSw').innerHTML=SKINS.map(function(s,i){var c=s[1].map(function(v){return Math.round(255*Math.pow(v*2.2,1/2.2)*0.9)});return '<b data-i="'+i+'" title="'+s[0]+'" style="background:rgb('+c.join(',')+')" class="'+(i===S.skin?'on':'')+'"></b>'}).join('');
+$$('#skinSw b').forEach(function(b){b.onclick=function(){S.skin=+b.dataset.i;$$('#skinSw b').forEach(function(x){x.classList.toggle('on',x===b)});};});
+
+/* ===================== LIPO MODEL ===================== */
+function lipoCalc(){
+  var L=S.lp,bmi=L.w/Math.pow(L.h/100,2),ex=Math.max(0,bmi-21);
+  var base={abd:clamp(0.015+ex*0.0062,0.015,0.11),flank:clamp(0.012+ex*0.0036,0.012,0.065),thigh:clamp(0.004+ex*0.004,0,0.05)};
+  var scale=1+clamp(bmi-23,-6,20)*0.007;
+  var cap=1.5+Math.max(0,bmi-20)*0.45,r=clamp(L.L/cap,0,0.9);
+  var after={abd:L.areas.abd?base.abd*(1-r):base.abd,flank:L.areas.flank?base.flank*(1-r):base.flank,thigh:L.areas.thigh?base.thigh*(1-r):base.thigh};
+  return {bmi:bmi,base:base,after:after,scale:scale,r:r,cap:cap};
+}
+function perim(a,b){return Math.PI*(3*(a+b)-Math.sqrt((3*a+b)*(a+3*b)));}
+function updLipo(){
+  var L=S.lp,c=lipoCalc();
+  $('#lLv').textContent=L.L.toFixed(1)+' L';
+  var kg=L.L*0.9;$('#lNewW').textContent=(L.w-kg).toFixed(1);
+  $('#lBmi').textContent=c.bmi.toFixed(1)+' > '+((L.w-kg)/Math.pow(L.h/100,2)).toFixed(1);
+  var rx0=0.124+0.012*L.g,rz0=0.082+0.004*L.g;
+  var w0=perim(rx0*c.scale+c.base.flank,rz0*c.scale+c.base.abd*0.5),w1=perim(rx0*c.scale+c.after.flank,rz0*c.scale+c.after.abd*0.5);
+  $('#lWaist').textContent=(w0>w1+0.001)?'-'+Math.round((w0-w1)*100)+' cm':'-';
+  var n=(L.areas.abd?1:0)+(L.areas.flank?1:0)+(L.areas.thigh?1:0);
+  $('#lMsg').textContent=!n?'Choose at least one area to treat.':(L.L>5?'Large volumes are only considered after full assessment, often in stages.':(L.L>c.cap?'This is more than the usual fat available at this body size; the preview is capped.':'Drag the divider and rotate the body to see the change from every angle.'));
+  $('#lInfo').textContent=['SKIN: the outer layer you see. Liposuction tiny incisions are placed where they are hardest to see.','FAT LAYER: the yellow layer under the skin is what liposuction removes, using a thin tube (cannula) moved in a fan pattern.','MUSCLE: the muscle underneath is not removed. Liposuction reveals the shape that is already there.','X-RAY SLICE: a horizontal cut through the torso. Skin (dark rim), fat (yellow), muscle (red). Watch the cannula work inside the fat layer, then compare before and after.'][L.layer];
+  $('#cutRow').style.display=L.layer===3?'block':'none';$('#canRow').style.display=L.layer===3?'flex':'none';
+  renderBody();
+}
+$('#lW').oninput=function(e){S.lp.w=clamp(+e.target.value||70,35,200);updLipo();};
+$('#lH').oninput=function(e){S.lp.h=clamp(+e.target.value||165,120,220);updLipo();};
+$('#lL').oninput=function(e){S.lp.L=+e.target.value;updLipo();};
+$('#lCut').oninput=function(e){S.lp.cut=+e.target.value;};
+$('#lCan').onchange=function(e){S.lp.can=e.target.checked;};
+$$('#gChips .chip').forEach(function(b){b.onclick=function(){$$('#gChips .chip').forEach(function(x){x.classList.toggle('on',x===b)});S.lp.g=+b.dataset.g;updLipo();};});
+$$('#aChips .chip').forEach(function(b){b.onclick=function(){toggleArea(b.dataset.a);};});
+function toggleArea(a){S.lp.areas[a]=!S.lp.areas[a];$$('#aChips .chip').forEach(function(x){x.classList.toggle('on',!!S.lp.areas[x.dataset.a]);});updLipo();}
+$$('#vChips .chip').forEach(function(b){b.onclick=function(){$$('#vChips .chip').forEach(function(x){x.classList.toggle('on',x===b)});S.lp.layer=+b.dataset.v;if(S.lp.layer===3){goCam('slice');S.auto=false;}else if(camT.pitch>0.6){goCam('torso');}updAutoBtn();updLipo();};});
+$$('#camChips .chip').forEach(function(b){b.onclick=function(){goCam(b.dataset.c);S.auto=false;updAutoBtn();};});
+$('#lQuote').onclick=function(){$('#qProc').value='lipo';$('#qW').value=S.lp.w;$('#qH').value=S.lp.h;qProcChange();$$('#qAChips .chip').forEach(function(x){x.classList.toggle('on',!!S.lp.areas[x.dataset.a]);});qBmi();showTab('quote');};
+
+/* ===================== HOTSPOTS ===================== */
+var hotsEl=$('#hots'),HOTS=[];
+function buildHots(){
+  hotsEl.innerHTML='';HOTS=[];
+  function add(kind,id,pos,nrm){var d=document.createElement('div');d.className='hot';d.dataset.z=id;hotsEl.appendChild(d);
+    d.addEventListener('pointerdown',function(e){e.stopPropagation();if(kind==='z')selZone(id);else toggleArea(['abd','flank','thigh'][id-1]);});
+    HOTS.push({el:d,pos:pos,n:nrm,kind:kind,id:id});}
+  if(S.tab==='botox'){
+    var zf=function(x,y){return -0.012+0.098*Math.sqrt(Math.max(0,1-Math.pow(x/0.078,2)-Math.pow((y-0.015)/0.092,2)))+0.006};
+    [-0.040,-0.013,0.013,0.040].forEach(function(x){add('z',1,[x,0.052,zf(x,0.052)],[0,0.2,1])});
+    [[0,0.020],[-0.013,0.028],[0.013,0.028],[-0.027,0.038],[0.027,0.038]].forEach(function(p){add('z',2,[p[0],p[1],zf(p[0],p[1])+0.012],[0,0,1])});
+    [-1,1].forEach(function(s){[[0.060,0.018],[0.064,0.004],[0.060,-0.010]].forEach(function(p){add('z',3,[s*p[0],p[1],0.052],[s,0,0.5])})});
+  } else if(S.tab==='lipo'){ add('a',1,[0,0.04,0.12],[0,0,1]);add('a',2,[-0.16,0.10,0.0],[-1,0,0]);add('a',2,[0.16,0.10,0.0],[1,0,0]);add('a',3,[-0.10,-0.30,0.1],[-0.3,0,1]);add('a',3,[0.10,-0.30,0.1],[0.3,0,1]); }
+  selZone(S.bx.sel);
+}
+function updHots(B,w,h){
+  var c=lipoCalc(),a=hotsEl.getBoundingClientRect();
+  HOTS.forEach(function(H){
+    var P=H.pos.slice();
+    if(H.kind==='a'){var sc=c.scale;if(H.id===1)P[2]=0.095*sc+c.base.abd+0.004;if(H.id===2)P[0]=Math.sign(P[0])*((0.124+0.012*S.lp.g)*sc+c.base.flank+0.004);if(H.id===3)P[0]=Math.sign(P[0])*0.09,P[2]=0.095*sc+c.base.thigh;}
+    var pr=project(P,B,a.width,a.height);
+    var ok=!!pr;
+    if(ok){var v=[B.pos[0]-P[0],B.pos[1]-P[1],B.pos[2]-P[2]];var l=Math.hypot(v[0],v[1],v[2]);var nl=Math.hypot(H.n[0],H.n[1],H.n[2]);
+      var cs=(v[0]*H.n[0]+v[1]*H.n[1]+v[2]*H.n[2])/(l*nl);ok=cs>0.25;}
+    if(H.kind==='a'&&S.lp.layer===3)ok=false;
+    H.el.style.display=ok?'block':'none';
+    if(ok){H.el.style.left=pr[0]+'px';H.el.style.top=pr[1]+'px';
+      if(H.kind==='a'){var on=!!S.lp.areas[['abd','flank','thigh'][H.id-1]];H.el.classList.toggle('sel',on);}}
+  });
+}
+
+/* ===================== RENDER LOOP ===================== */
+var PAUSE=false;
+function frame(t){
+  if(!PAUSE)requestAnimationFrame(frame);
+  draw(t);
+}
+function draw(t){
+  if(!GLOK||S.tab==='quote')return;
+  var dt=lastT?t-lastT:16;lastT=t;frameAvg=frameAvg*0.9+dt*0.1;
+  if(cd>0)cd--;
+  else if(frameAvg>40&&qScale>0.3){qScale*=0.88;cd=25;sizeCanvas();}
+  else if(frameAvg<20&&qScale<0.95){qScale=Math.min(1,qScale*1.06);cd=60;sizeCanvas();}
+  if(S.auto&&S.tab==='lipo'){camT.yaw+=dt*0.00035;cam.yaw+=dt*0.00035;}
+  ['yaw','pitch','dist','tx','ty','tz'].forEach(function(k){cam[k]+=(camT[k]-cam[k])*0.12;});
+  var B=camBasis(),L=S.lp,c=lipoCalc();
+  gl.viewport(0,0,cv.width,cv.height);
+  gl.uniform2f(U.uRes,cv.width,cv.height);gl.uniform1f(U.uTime,t/1000);
+  gl.uniform1i(U.uScene,S.tab==='botox'?1:0);
+  gl.uniform3fv(U.uCamPos,B.pos);gl.uniform3fv(U.uCamFwd,B.f);gl.uniform3fv(U.uCamRight,B.r);gl.uniform3fv(U.uCamUp,B.u);
+  gl.uniform1f(U.uSplit,S.split);gl.uniform3fv(U.uSkin,SKINS[S.skin][1]);
+  gl.uniform1f(U.uGender,L.g);gl.uniform1f(U.uScale,c.scale);
+  gl.uniform3f(U.uFatB,c.base.abd,c.base.flank,c.base.thigh);gl.uniform3f(U.uFatA,c.after.abd,c.after.flank,c.after.thigh);
+  gl.uniform1i(U.uLayer,L.layer);gl.uniform1f(U.uCutY,L.cut);gl.uniform1f(U.uCan,L.can?1:0);
+  gl.uniform3f(U.uRemA,remF(0),remF(1),remF(2));gl.uniform3fv(U.uExpr,S.bx.expr);gl.uniform1i(U.uSel,S.bx.sel);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  splitEl.style.left=(S.split*100)+'%';
+  $('#labB').textContent=S.tab==='botox'?'BEFORE':'NOW';
+  updHots(B,cv.width,cv.height);
+}
+
+/* ===================== PHOTO TOOLS ===================== */
+function readImage(file,mw,mh,cb){var fr=new FileReader();fr.onload=function(){var im=new Image();im.onload=function(){var s=Math.min(1,mw/im.width,mh/im.height),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c);};im.src=fr.result;};fr.readAsDataURL(file);}
+var faceCv=$('#faceCv'),fctx=faceCv.getContext('2d'),F=null,painting=false;
+function makeSoft(c){var t=document.createElement('canvas');t.width=Math.max(1,c.width/4|0);t.height=Math.max(1,c.height/4|0);t.getContext('2d').drawImage(c,0,0,t.width,t.height);var s=document.createElement('canvas');s.width=c.width;s.height=c.height;var x=s.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(t,0,0,s.width,s.height);return s;}
+$('#faceFile').onchange=function(e){var f=e.target.files[0];if(!f)return;readImage(f,720,900,function(c){F={orig:c,soft:makeSoft(c)};faceCv.width=c.width;faceCv.height=c.height;fctx.drawImage(c,0,0);});};
+$('#faceReset').onclick=function(){if(F)fctx.drawImage(F.orig,0,0);};
+$('#faceStr').oninput=function(e){$('#faceStrV').textContent=e.target.value+'%';};
+function paintAt(e){if(!F)return;var r=faceCv.getBoundingClientRect(),sx=faceCv.width/r.width,x=(e.clientX-r.left)*sx,y=(e.clientY-r.top)*sx,rad=26*sx;fctx.save();fctx.beginPath();fctx.arc(x,y,rad,0,Math.PI*2);fctx.clip();fctx.globalAlpha=(+$('#faceStr').value/100)*0.4;fctx.drawImage(F.soft,0,0);fctx.restore();}
+faceCv.addEventListener('pointerdown',function(e){painting=true;faceCv.setPointerCapture(e.pointerId);paintAt(e);});
+faceCv.addEventListener('pointermove',function(e){if(painting)paintAt(e);});
+faceCv.addEventListener('pointerup',function(){painting=false;});
+var bodyCv=$('#bodyCv'),bctx=bodyCv.getContext('2d'),B2={img:null,cx:0.5,cy:0.55};
+$('#bodyFile').onchange=function(e){var f=e.target.files[0];if(!f)return;readImage(f,720,960,function(c){B2.img=c;bodyCv.width=c.width;bodyCv.height=c.height;renderBody(true);});};
+function renderBody(g){
+  if(!B2.img)return;var w=bodyCv.width,h=bodyCv.height,src=B2.img;
+  var c=lipoCalc();var amt=clamp(S.lp.L*0.9/S.lp.w*3.5,0,0.3);
+  bctx.drawImage(src,0,0);
+  var cx=B2.cx*w,cy=B2.cy*h,bh=(+$('#bBand').value/100)*h,W=(+$('#bWidth').value/100)*w;
+  if(amt>0){var Lx=Math.max(0,cx-W),Rx=Math.min(w,cx+W);
+    for(var y=Math.max(0,Math.floor(cy-bh));y<Math.min(h,cy+bh);y++){var k=Math.pow(Math.cos((y-cy)/bh*Math.PI/2),2),s=1-amt*k,dl=cx-(cx-Lx)*s,dr=cx+(Rx-cx)*s;
+      if(Lx>0)bctx.drawImage(src,0,y,Lx,1,0,y,dl,1);bctx.drawImage(src,Lx,y,Rx-Lx,1,dl,y,dr-dl,1);if(Rx<w)bctx.drawImage(src,Rx,y,w-Rx,1,dr,y,w-dr,1);}}
+  if(g){bctx.save();bctx.setLineDash([8,6]);bctx.strokeStyle='#ffd27a';bctx.lineWidth=2;bctx.strokeRect(cx-W,cy-bh,W*2,bh*2);bctx.restore();}
+}
+var bDrag=false;
+function setWaist(e){var r=bodyCv.getBoundingClientRect();B2.cx=clamp((e.clientX-r.left)/r.width,0,1);B2.cy=clamp((e.clientY-r.top)/r.height,0,1);renderBody(true);}
+bodyCv.addEventListener('pointerdown',function(e){bDrag=true;bodyCv.setPointerCapture(e.pointerId);setWaist(e);});
+bodyCv.addEventListener('pointermove',function(e){if(bDrag)setWaist(e);});
+bodyCv.addEventListener('pointerup',function(){bDrag=false;renderBody(false);});
+$('#bBand').oninput=function(){renderBody(true)};$('#bWidth').oninput=function(){renderBody(true)};
+
+/* ===================== QUOTE ===================== */
+function qProcChange(){var l=$('#qProc').value==='lipo';$('#qUnitsRow').style.display=l?'none':'block';$('#qAreas').style.display=l?'block':'none';}
+$('#qProc').onchange=qProcChange;qProcChange();
+$$('#qAChips .chip').forEach(function(b){b.onclick=function(){b.classList.toggle('on');};});
+function qBmi(){var w=+$('#qW').value,h=+$('#qH').value;if(w>0&&h>0){var b=w/Math.pow(h/100,2);$('#qBmi').textContent='BMI: '+b.toFixed(1);return +b.toFixed(1);}$('#qBmi').textContent='BMI: --';return null;}
+$('#qW').oninput=qBmi;$('#qH').oninput=qBmi;
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
+$('#qGo').onclick=function(){
+  var name=$('#qName').value.trim(),bmi=qBmi(),lipo=$('#qProc').value==='lipo';$('#qErr').textContent='';
+  if(!name||!$('#qEmail').value.trim())return $('#qErr').textContent='Please enter your name and email.';
+  if(bmi===null)return $('#qErr').textContent='Please enter a valid weight and height.';
+  if(!$('#qMed').value.trim())return $('#qErr').textContent="Please answer medical conditions (or write 'None').";
+  var min,max,label;
+  if(lipo){var ar=$$('#qAChips .chip.on').map(function(x){return x.dataset.a});if(!ar.length)return $('#qErr').textContent='Choose at least one area.';
+    min=0;max=0;ar.forEach(function(a){min+=CFG.areas[a].min;max+=CFG.areas[a].max;});if(ar.length>1){min*=CFG.multiDiscount;max*=CFG.multiDiscount;}
+    label='Liposuction - '+ar.map(function(a){return CFG.areas[a].n}).join(', ');}
+  else{var u=Math.max(1,+$('#qUnits').value||1);min=CFG.botox.min*u;max=CFG.botox.max*u;label='Botox - '+u+' units';}
+  var tier=bmi<30?0.25:bmi<=35?0.5:bmi<=40?0.75:1.0;
+  var cost=min+(max-min)*tier;if($('#qSmoke').value==='Yes'&&lipo)cost*=1.10;
+  var step=lipo?1000:100;cost=Math.round(cost/step)*step;
+  var msg='Hello Dr. Ogalo, my estimate is '+fmt(cost)+' for '+label+'. My name is '+name+'. I would like to book a consultation.';
+  var pr=IN_APP?'':'<button class="btn ghost" onclick="window.print()">Print / Save PDF</button>';
+  $('#qOut').innerHTML='<div class="quote"><h3>Dear '+esc(name)+',</h3><div>'+esc(label)+'</div><p class="hint">Estimated range: '+fmt(min)+' to '+fmt(max)+'</p><div class="hint" style="margin:0">Your expected cost</div><div class="big">'+fmt(cost)+'</div><p class="note">Based on your BMI ('+bmi+') and answers. Final pricing is confirmed by Dr. Ogalo at consultation.</p><div class="noprint"><a class="btn" href="https://wa.me/'+CFG.whatsapp+'?text='+encodeURIComponent(msg)+'" target="_blank" rel="noopener">Book on WhatsApp</a>'+pr+'</div></div>';
+  $('#qOut').scrollIntoView({behavior:'smooth'});
+};
+
+/* ===================== BOOT ===================== */
+buildZones();updBotox();
+try{initGL();}catch(e){console.error(e);}
+sizeCanvas();buildHots();updLipo();goCam('head');Object.assign(cam,PRE.head);
+requestAnimationFrame(frame);
+window.APP={still:function(q){PAUSE=true;if(q){qScale=q;cd=1e9;}sizeCanvas();cam.yaw=camT.yaw;cam.pitch=camT.pitch;cam.dist=camT.dist;cam.tx=camT.tx;cam.ty=camT.ty;cam.tz=camT.tz;draw(2000);gl.finish();var px=new Uint8Array(4);gl.readPixels(0,0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,px);},S:S,cam:cam,camT:camT,goCam:goCam,showTab:showTab,selZone:selZone,updBotox:updBotox,updLipo:updLipo,setQ:function(q){qScale=q;cd=1e9;sizeCanvas();}};
+</script>
+</body>
+</html>
